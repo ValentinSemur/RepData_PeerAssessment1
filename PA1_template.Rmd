@@ -1,25 +1,144 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+Reproducible research - Course Project 1
+=========================================
 
+Format the notation of number inside text
+```{r}
+options(scipen=999, digits=2)
+```
 
 ## Loading and preprocessing the data
 
+1 - Download and load the data required for the assignment 
 
+```{r}
 
-## What is mean total number of steps taken per day?
+link <- 'https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip'
+temp <- tempfile()
+download.file(link, temp)
+unzip(zipfile = temp, exdir = getwd())
 
+activity <- read.csv('activity.csv')
 
+unlink(temp)
+```
+
+2 - Process the data???
+
+## What is the mean total number of steps taken per day?
+
+1 - Calculate the total number of steps taken per day
+
+```{r}
+stepsPerDay <- aggregate(activity$steps, by=list(date=activity$date), FUN = sum)
+```
+
+2 - Make a histogram of the total number of steps taken each day
+
+```{r}
+hist(stepsPerDay$x,
+     breaks = 9,
+     main = 'Number of steps taken per day',
+     xlab = 'Steps per day')
+```
+
+3 - Calculate and report the mean and median of the total number of steps taken per day
+
+```{r}
+stepsTakenSummary <- summary(stepsPerDay$x)
+stepsTakenMean <- unname(stepsTakenSummary[4])
+stepsTakenMedian <- unname(stepsTakenSummary[3])
+```
+
+MEAN = `r stepsTakenMean`  
+MEDIAN = `r stepsTakenMedian`  
 
 ## What is the average daily activity pattern?
 
+1 - Make a time series plot of the 5-minutes interval
 
+```{r}
+stepsPerInterval <- aggregate(activity$steps, by=list(interval=activity$interval), FUN = mean, na.rm = TRUE)
+with(stepsPerInterval,
+     plot(interval, 
+          x, 
+          type='l', 
+          ylab = 'Number of steps', 
+          xlab = 'Interval', 
+          main = 'Average number of steps taken in 5-minutes intervals'))
+```
+
+2 - Which 5-minutes interval contains the maximum number of steps? 
+
+```{r}
+maxStepsInterval <- stepsPerInterval[which(stepsPerInterval$x == max(stepsPerInterval$x)), 1]
+```
+
+The interval `r maxStepsInterval` contains the maximum number of steps
 
 ## Imputing missing values
 
+1 - Calculate and report the number of missing values in the dataset
 
+```{r}
+totalNA <- sum(is.na(activity))
+```
+
+There are `r totalNA` rows with missing values  
+
+2 - Strategy for filling the missing values   
+  
+In order to fill for the missing values, we will use the mean for that 5-minutes interval  
+
+3 - Create a new dataset with NAs filled
+
+```{r}
+activityFilledNAs <- merge(activity, stepsPerInterval, by='interval')
+activityFilledNAs$steps <- ifelse(is.na(activityFilledNAs$steps), 
+                                  activityFilledNAs$x, 
+                                  activityFilledNAs$steps)
+```
+
+4 - Make a histogram and report the mean and median
+
+```{r}
+stepsPerDayNoNAs <- aggregate(activityFilledNAs$steps, by=list(date=activity$date), FUN = sum)
+hist(stepsPerDayNoNAs$x,
+     breaks = 9,
+     main = 'Number of steps taken per day',
+     xlab = 'Steps per day')
+stepsTakenSummaryNoNAs <- summary(stepsPerDayNoNAs$x)
+stepsTakenMeanNoNAs <- unname(stepsTakenSummaryNoNAs[4])
+stepsTakenMedianNoNAs <- unname(stepsTakenSummaryNoNAs[3])
+```
+
+MEAN = `r stepsTakenMeanNoNAs`  
+MEDIAN = `r stepsTakenMedianNoNAs`  
+
+The mean remains the same, however the median is lower when the NA values are filled
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+1 - Create a new variable with two levels, weekend and weekday
+
+```{r}
+activity$week <- ifelse(weekdays(as.Date(activity$date)) == 'Saturday' | weekdays(as.Date(activity$date)) == 'Sunday', 'Weekend', 'Weekday')
+```
+
+2 - Make a panel plot
+
+```{r}
+stepsPerIntervalWE <- aggregate(activity$steps, by=list(interval=activity$interval, week=activity$week), FUN = mean, na.rm = TRUE)
+
+with(stepsPerIntervalWE,
+     plot(interval, 
+          x, 
+          type='l', 
+          ylab = 'Number of steps', 
+          xlab = 'Interval', 
+          main = 'Average number of steps taken in 5-minutes intervals'))
+```
+
+
+
+
+
